@@ -70,6 +70,21 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     
+    // Splash Screen
+    implementation(libs.androidx.core.splashscreen)
+    
+    // Media (for notification MediaStyle)
+    implementation(libs.androidx.media)
+    
+    // Coil for image loading
+    implementation(libs.coil.compose)
+    
+    // Accompanist for permissions
+    implementation(libs.accompanist.permissions)
+    
+    // JAudioTagger for audio metadata editing
+    implementation("net.jthink:jaudiotagger:3.0.1")
+    
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

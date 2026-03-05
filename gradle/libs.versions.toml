@@ -12,6 +12,11 @@ lifecycleVersion = "2.8.7"
 roomVersion = "2.6.1"
 coroutinesVersion = "1.9.0"
 ksp = "2.0.21-1.0.28"
+splashScreen = "1.0.1"
+media = "1.7.0"
+coil = "2.5.0"
+accompanist = "0.32.0"
+okhttp = "4.12.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -45,6 +50,21 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 # Coroutines
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutinesVersion" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesVersion" }
+
+# Splash Screen
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashScreen" }
+
+# Media
+androidx-media = { group = "androidx.media", name = "media", version.ref = "media" }
+
+# Coil for image loading
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# Accompanist for permissions
+accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
+
+# OkHttp for Whisper API
+okhttp3 = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

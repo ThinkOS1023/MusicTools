@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Music Note Icon -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,24C54,24 54,24 54,24L54,60C51.8,58.8 49.2,58 46.5,58C38.5,58 32,63.4 32,70C32,76.6 38.5,82 46.5,82C54.5,82 61,76.6 61,70L61,38L76,34L76,56C73.8,54.8 71.2,54 68.5,54C60.5,54 54,59.4 54,66C54,72.6 60.5,78 68.5,78C76.5,78 83,72.6 83,66L83,26L54,34L54,24Z" />
+</vector>
