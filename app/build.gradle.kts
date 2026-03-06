@@ -37,6 +37,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -84,6 +85,13 @@ dependencies {
     
     // JAudioTagger for audio metadata editing
     implementation("net.jthink:jaudiotagger:3.0.1")
+
+    // OkHttp for network requests (update check)
+    implementation(libs.okhttp3)
+
+    // Haze for frosted glass effects
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
     
     // Testing
     testImplementation(libs.junit)

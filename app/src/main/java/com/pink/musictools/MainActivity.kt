@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pink.musictools.data.local.AppPreferences
 import com.pink.musictools.data.local.MusicDatabase
 import com.pink.musictools.data.repository.MusicRepositoryImpl
 import com.pink.musictools.domain.ArtworkStore
@@ -36,17 +39,20 @@ import com.pink.musictools.ui.screens.ImportScreen
 import com.pink.musictools.ui.screens.MusicEditorScreen
 import com.pink.musictools.ui.screens.MusicListScreen
 import com.pink.musictools.ui.screens.MusicPlayerScreen
+import com.pink.musictools.ui.screens.SettingsScreen
 import com.pink.musictools.ui.theme.MusicToolsTheme
 import com.pink.musictools.viewmodel.ImportViewModel
 import com.pink.musictools.viewmodel.MusicEditorViewModel
 import com.pink.musictools.viewmodel.MusicLibraryViewModel
 import com.pink.musictools.viewmodel.MusicPlayerViewModel
+import com.pink.musictools.viewmodel.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var musicPlayerViewModel: MusicPlayerViewModel
     private lateinit var musicLibraryViewModel: MusicLibraryViewModel
     private lateinit var importViewModel: ImportViewModel
+    private lateinit var settingsViewModel: SettingsViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -61,17 +67,28 @@ class MainActivity : ComponentActivity() {
         val metadataReader = MetadataReader(applicationContext, artworkStore)
         val metadataWriter = MetadataWriter(applicationContext)
         val musicExporter = MusicExporter(applicationContext, metadataWriter)
+        val appPreferences = AppPreferences(applicationContext)
 
         musicPlayerViewModel = MusicPlayerViewModel(playbackController, musicRepository)
         musicLibraryViewModel = MusicLibraryViewModel(musicRepository, musicExporter)
         importViewModel = ImportViewModel(fileScanner, musicRepository, metadataReader)
+        settingsViewModel = SettingsViewModel(appPreferences)
 
         setContent {
-            MusicToolsTheme {
+            val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
+            val colorTheme by settingsViewModel.colorTheme.collectAsStateWithLifecycle()
+            val dynamicColor by settingsViewModel.dynamicColor.collectAsStateWithLifecycle()
+
+            MusicToolsTheme(
+                themeMode = themeMode,
+                colorTheme = colorTheme,
+                dynamicColor = dynamicColor
+            ) {
                 MusicPlayerApp(
                     musicPlayerViewModel = musicPlayerViewModel,
                     musicLibraryViewModel = musicLibraryViewModel,
-                    importViewModel = importViewModel
+                    importViewModel = importViewModel,
+                    settingsViewModel = settingsViewModel
                 )
             }
         }
@@ -82,6 +99,7 @@ sealed class Screen {
     object Player : Screen()
     object Library : Screen()
     object Import : Screen()
+    object Settings : Screen()
     data class Editor(val musicId: String) : Screen()
 }
 
@@ -89,7 +107,8 @@ sealed class Screen {
 fun MusicPlayerApp(
     musicPlayerViewModel: MusicPlayerViewModel,
     musicLibraryViewModel: MusicLibraryViewModel,
-    importViewModel: ImportViewModel
+    importViewModel: ImportViewModel,
+    settingsViewModel: SettingsViewModel
 ) {
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Player) }
 
@@ -125,6 +144,12 @@ fun MusicPlayerApp(
                         label = { Text("导入") },
                         selected = selectedScreen == Screen.Import,
                         onClick = { selectedScreen = Screen.Import }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Settings, contentDescription = "设置") },
+                        label = { Text("设置") },
+                        selected = selectedScreen == Screen.Settings,
+                        onClick = { selectedScreen = Screen.Settings }
                     )
                 }
             }
@@ -162,6 +187,13 @@ fun MusicPlayerApp(
                 Screen.Import -> {
                     ImportScreen(
                         viewModel = importViewModel,
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
+
+                Screen.Settings -> {
+                    SettingsScreen(
+                        viewModel = settingsViewModel,
                         modifier = Modifier.padding(paddingValues)
                     )
                 }

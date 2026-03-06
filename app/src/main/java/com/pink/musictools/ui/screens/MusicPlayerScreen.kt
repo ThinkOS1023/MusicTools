@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -52,6 +53,10 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pink.musictools.data.model.PlaybackProgress
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.materials.HazeMaterials
 import com.pink.musictools.data.model.PlaybackState
 import com.pink.musictools.data.model.RepeatMode
 import com.pink.musictools.domain.LyricsFormatter
@@ -120,8 +125,9 @@ fun MusicPlayerScreen(
     }
 
     var showFullLyrics by remember { mutableStateOf(false) }
+    val hazeState = remember { HazeState() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().haze(hazeState)) {
         // GPU-blurred background
         if (currentMusic?.albumArtUri != null) {
             val blurRequest = remember(currentMusic?.albumArtUri) {
@@ -321,34 +327,47 @@ fun MusicPlayerScreen(
                         Spacer(modifier = Modifier.weight(1f))
                     }
 
-                    // Progress
-                    ProgressSlider(
-                        progress = progress,
-                        onSeek = { viewModel.onSeekTo(it) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // Progress + Controls wrapped in frosted glass panel
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .hazeChild(
+                                state = hazeState,
+                                shape = RoundedCornerShape(24.dp),
+                                style = HazeMaterials.regular(MaterialTheme.colorScheme.surface)
+                            ),
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.Transparent
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                            ProgressSlider(
+                                progress = progress,
+                                onSeek = { viewModel.onSeekTo(it) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
-                    // Controls
-                    PlayerControls(
-                        playbackState = playbackState,
-                        repeatMode = repeatMode,
-                        shuffleMode = shuffleMode,
-                        onPlayPauseClick = { viewModel.onPlayPauseClicked() },
-                        onPreviousClick = { viewModel.onPreviousClicked() },
-                        onNextClick = { viewModel.onNextClicked() },
-                        onRepeatClick = {
-                            val nextMode = when (repeatMode) {
-                                RepeatMode.OFF -> RepeatMode.ALL
-                                RepeatMode.ALL -> RepeatMode.ONE
-                                RepeatMode.ONE -> RepeatMode.OFF
-                            }
-                            viewModel.onRepeatModeChanged(nextMode)
-                        },
-                        onShuffleClick = { viewModel.onShuffleModeChanged(!shuffleMode) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                            PlayerControls(
+                                playbackState = playbackState,
+                                repeatMode = repeatMode,
+                                shuffleMode = shuffleMode,
+                                onPlayPauseClick = { viewModel.onPlayPauseClicked() },
+                                onPreviousClick = { viewModel.onPreviousClicked() },
+                                onNextClick = { viewModel.onNextClicked() },
+                                onRepeatClick = {
+                                    val nextMode = when (repeatMode) {
+                                        RepeatMode.OFF -> RepeatMode.ALL
+                                        RepeatMode.ALL -> RepeatMode.ONE
+                                        RepeatMode.ONE -> RepeatMode.OFF
+                                    }
+                                    viewModel.onRepeatModeChanged(nextMode)
+                                },
+                                onShuffleClick = { viewModel.onShuffleModeChanged(!shuffleMode) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
