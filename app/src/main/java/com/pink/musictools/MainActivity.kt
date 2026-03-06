@@ -9,16 +9,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +33,7 @@ import com.pink.musictools.domain.MetadataReader
 import com.pink.musictools.domain.MetadataWriter
 import com.pink.musictools.domain.MusicExporter
 import com.pink.musictools.domain.PlaybackController
+import com.pink.musictools.ui.components.FloatingNavBar
 import com.pink.musictools.ui.screens.ImportScreen
 import com.pink.musictools.ui.screens.MusicEditorScreen
 import com.pink.musictools.ui.screens.MusicListScreen
@@ -47,6 +45,8 @@ import com.pink.musictools.viewmodel.MusicEditorViewModel
 import com.pink.musictools.viewmodel.MusicLibraryViewModel
 import com.pink.musictools.viewmodel.MusicPlayerViewModel
 import com.pink.musictools.viewmodel.SettingsViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
 class MainActivity : ComponentActivity() {
 
@@ -113,7 +113,7 @@ fun MusicPlayerApp(
 ) {
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Player) }
 
-    // System back button: always return to Player (main menu), never go up the hierarchy
+    // System back: always return to Player main screen
     BackHandler(enabled = selectedScreen != Screen.Player) {
         selectedScreen = Screen.Player
     }
@@ -124,99 +124,89 @@ fun MusicPlayerApp(
     val playbackController = remember { PlaybackController(context.applicationContext) }
     val artworkStore = remember { ArtworkStore(context.applicationContext) }
 
+    // Shared haze state: screen content is haze source, nav bar is hazeChild consumer
+    val hazeState = remember { HazeState() }
+
+    // Nav items definition
+    val navItems = remember {
+        listOf(
+            Triple(Screen.Player,   Icons.Default.MusicNote,    "播放器"),
+            Triple(Screen.Library,  Icons.Default.LibraryMusic, "音乐库"),
+            Triple(Screen.Import,   Icons.Default.CloudDownload,"导入"),
+            Triple(Screen.Settings, Icons.Default.Settings,     "设置")
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             AnimatedVisibility(
                 visible = selectedScreen !is Screen.Editor,
-                enter = slideInVertically(tween(280)) { it },
-                exit = slideOutVertically(tween(200)) { it }
+                enter = slideInVertically(tween(320)) { it } + fadeIn(tween(240)),
+                exit  = slideOutVertically(tween(220)) { it } + fadeOut(tween(160))
             ) {
-                NavigationBar {
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.MusicNote, contentDescription = "播放器") },
-                        label = { Text("播放器") },
-                        selected = selectedScreen == Screen.Player,
-                        onClick = { selectedScreen = Screen.Player }
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.LibraryMusic, contentDescription = "音乐库") },
-                        label = { Text("音乐库") },
-                        selected = selectedScreen == Screen.Library,
-                        onClick = { selectedScreen = Screen.Library }
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Download, contentDescription = "导入") },
-                        label = { Text("导入") },
-                        selected = selectedScreen == Screen.Import,
-                        onClick = { selectedScreen = Screen.Import }
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Settings, contentDescription = "设置") },
-                        label = { Text("设置") },
-                        selected = selectedScreen == Screen.Settings,
-                        onClick = { selectedScreen = Screen.Settings }
-                    )
-                }
+                FloatingNavBar(
+                    items     = navItems,
+                    selected  = selectedScreen,
+                    hazeState = hazeState,
+                    onSelect  = { selectedScreen = it }
+                )
             }
         }
     ) { paddingValues ->
-        AnimatedContent(
-            targetState = selectedScreen,
-            transitionSpec = {
-                val enter = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 14 }
-                val exit = fadeOut(tween(160))
-                enter togetherWith exit
-            },
-            label = "screenTransition"
-        ) { screen ->
-            when (screen) {
-                Screen.Player -> {
-                    MusicPlayerScreen(
+        // Wrap entire screen content as the haze source so the nav bar blurs it
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .haze(hazeState)
+        ) {
+            AnimatedContent(
+                targetState = selectedScreen,
+                transitionSpec = {
+                    val enter = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 14 }
+                    val exit  = fadeOut(tween(160))
+                    enter togetherWith exit
+                },
+                label = "screenTransition"
+            ) { screen ->
+                when (screen) {
+                    Screen.Player -> MusicPlayerScreen(
                         viewModel = musicPlayerViewModel,
-                        modifier = Modifier.padding(paddingValues)
+                        modifier  = Modifier.padding(paddingValues)
                     )
-                }
 
-                Screen.Library -> {
-                    MusicListScreen(
-                        libraryViewModel = musicLibraryViewModel,
-                        playerViewModel = musicPlayerViewModel,
-                        onNavigateToEditor = { musicId ->
-                            selectedScreen = Screen.Editor(musicId)
-                        },
+                    Screen.Library -> MusicListScreen(
+                        libraryViewModel  = musicLibraryViewModel,
+                        playerViewModel   = musicPlayerViewModel,
+                        onNavigateToEditor = { selectedScreen = Screen.Editor(it) },
                         onNavigateToPlayer = { selectedScreen = Screen.Player },
-                        modifier = Modifier.padding(paddingValues)
+                        modifier          = Modifier.padding(paddingValues)
                     )
-                }
 
-                Screen.Import -> {
-                    ImportScreen(
+                    Screen.Import -> ImportScreen(
                         viewModel = importViewModel,
-                        modifier = Modifier.padding(paddingValues)
+                        modifier  = Modifier.padding(paddingValues)
                     )
-                }
 
-                Screen.Settings -> {
-                    SettingsScreen(
+                    Screen.Settings -> SettingsScreen(
                         viewModel = settingsViewModel,
-                        modifier = Modifier.padding(paddingValues)
+                        modifier  = Modifier.padding(paddingValues)
                     )
-                }
 
-                is Screen.Editor -> {
-                    val editorViewModel = remember(screen.musicId) {
-                        MusicEditorViewModel(
-                            musicRepository = musicRepository,
-                            playbackController = playbackController,
-                            artworkStore = artworkStore
+                    is Screen.Editor -> {
+                        val editorViewModel = remember(screen.musicId) {
+                            MusicEditorViewModel(
+                                musicRepository  = musicRepository,
+                                playbackController = playbackController,
+                                artworkStore     = artworkStore
+                            )
+                        }
+                        MusicEditorScreen(
+                            musicId        = screen.musicId,
+                            viewModel      = editorViewModel,
+                            onNavigateBack = { selectedScreen = Screen.Library }
                         )
                     }
-                    MusicEditorScreen(
-                        musicId = screen.musicId,
-                        viewModel = editorViewModel,
-                        onNavigateBack = { selectedScreen = Screen.Library }
-                    )
                 }
             }
         }
