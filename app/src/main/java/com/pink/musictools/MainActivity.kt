@@ -18,6 +18,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -111,6 +112,11 @@ fun MusicPlayerApp(
     settingsViewModel: SettingsViewModel
 ) {
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Player) }
+
+    // System back button: always return to Player (main menu), never go up the hierarchy
+    BackHandler(enabled = selectedScreen != Screen.Player) {
+        selectedScreen = Screen.Player
+    }
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val database = remember(context) { MusicDatabase.getInstance(context) }

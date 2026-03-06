@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -53,10 +52,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pink.musictools.data.model.PlaybackProgress
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
 import com.pink.musictools.data.model.PlaybackState
 import com.pink.musictools.data.model.RepeatMode
 import com.pink.musictools.domain.LyricsFormatter
@@ -125,9 +120,8 @@ fun MusicPlayerScreen(
     }
 
     var showFullLyrics by remember { mutableStateOf(false) }
-    val hazeState = remember { HazeState() }
 
-    Box(modifier = Modifier.fillMaxSize().haze(hazeState)) {
+    Box(modifier = Modifier.fillMaxSize()) {
         // GPU-blurred background
         if (currentMusic?.albumArtUri != null) {
             val blurRequest = remember(currentMusic?.albumArtUri) {
@@ -327,23 +321,52 @@ fun MusicPlayerScreen(
                         Spacer(modifier = Modifier.weight(1f))
                     }
 
-                    // Progress + Controls wrapped in frosted glass panel
-                    val surfaceTint = MaterialTheme.colorScheme.surface
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .hazeChild(
-                                state = hazeState,
-                                shape = RoundedCornerShape(24.dp),
-                                style = HazeStyle(
-                                    blurRadius = 20.dp,
-                                    tint = surfaceTint.copy(alpha = 0.60f)
-                                )
-                            ),
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color.Transparent
-                    ) {
-                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)) {
+                    // Controls panel — frosted glass card (background layer + content layer)
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        // Background: semi-transparent frosted glass surface
+                        Surface(
+                            modifier = Modifier.matchParentSize(),
+                            shape = RoundedCornerShape(24.dp),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+                            tonalElevation = 4.dp,
+                            shadowElevation = 0.dp
+                        ) {}
+
+                        // Content: lyrics preview + progress + controls — always sharp
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(24.dp))
+                                .padding(horizontal = 8.dp, vertical = 10.dp)
+                        ) {
+                            // Current lyric single-line preview
+                            val currentLine = parsedLyrics.getOrNull(currentLyricIndex)?.second.orEmpty()
+                            AnimatedContent(
+                                targetState = currentLine,
+                                transitionSpec = {
+                                    fadeIn(tween(250)) togetherWith fadeOut(tween(180))
+                                },
+                                label = "lyricsBar"
+                            ) { lyric ->
+                                if (lyric.isNotBlank()) {
+                                    Text(
+                                        text = lyric,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp)
+                                            .padding(bottom = 6.dp)
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.height(0.dp))
+                                }
+                            }
+
                             ProgressSlider(
                                 progress = progress,
                                 onSeek = { viewModel.onSeekTo(it) },
