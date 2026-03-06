@@ -54,9 +54,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pink.musictools.data.model.PlaybackProgress
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
-import dev.chrisbanes.haze.materials.HazeMaterials
 import com.pink.musictools.data.model.PlaybackState
 import com.pink.musictools.data.model.RepeatMode
 import com.pink.musictools.domain.LyricsFormatter
@@ -328,13 +328,17 @@ fun MusicPlayerScreen(
                     }
 
                     // Progress + Controls wrapped in frosted glass panel
+                    val surfaceTint = MaterialTheme.colorScheme.surface
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .hazeChild(
                                 state = hazeState,
                                 shape = RoundedCornerShape(24.dp),
-                                style = HazeMaterials.regular(MaterialTheme.colorScheme.surface)
+                                style = HazeStyle(
+                                    blurRadius = 20.dp,
+                                    tint = surfaceTint.copy(alpha = 0.60f)
+                                )
                             ),
                         shape = RoundedCornerShape(24.dp),
                         color = Color.Transparent

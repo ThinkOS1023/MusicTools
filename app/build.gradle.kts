@@ -91,7 +91,6 @@ dependencies {
 
     // Haze for frosted glass effects
     implementation(libs.haze)
-    implementation(libs.haze.materials)
     
     // Testing
     testImplementation(libs.junit)
