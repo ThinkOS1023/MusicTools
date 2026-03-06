@@ -40,7 +40,13 @@ fun ImportScreen(
     
     val selectedCount = discoveredFiles.count { it.isSelected }
     val allSelected = discoveredFiles.isNotEmpty() && discoveredFiles.all { it.isSelected }
-    
+
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredFiles = remember(discoveredFiles, searchQuery) {
+        if (searchQuery.isBlank()) discoveredFiles
+        else discoveredFiles.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    }
+
     var hasPermission by remember { mutableStateOf(false) }
     var showPermissionDeniedMessage by remember { mutableStateOf(false) }
     
@@ -419,25 +425,50 @@ fun ImportScreen(
                 
                 // 发现的文件列表
                 AnimatedVisibility(
-                    visible = discoveredFiles.isNotEmpty() && 
+                    visible = discoveredFiles.isNotEmpty() &&
                               importStatus !is ImportViewModel.ImportStatus.Scanning &&
                               importStatus !is ImportViewModel.ImportStatus.Importing,
                     enter = expandVertically() + fadeIn(),
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Column {
+                        // 搜索栏
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            placeholder = { Text("搜索文件名...") },
+                            leadingIcon = { Icon(Icons.Default.Search, null) },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(Icons.Default.Clear, "清除")
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        val countText = if (searchQuery.isBlank())
+                            "发现 ${discoveredFiles.size} 个音频文件"
+                        else
+                            "找到 ${filteredFiles.size} / ${discoveredFiles.size} 个"
                         Text(
-                            "发现 ${discoveredFiles.size} 个音频文件",
+                            countText,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
+
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(
-                                items = discoveredFiles,
+                                items = filteredFiles,
                                 key = { it.uri.toString() }
                             ) { audioFile ->
                                 AudioFileItem(

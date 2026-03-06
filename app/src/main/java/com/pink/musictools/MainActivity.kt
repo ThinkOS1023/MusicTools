@@ -79,11 +79,13 @@ class MainActivity : ComponentActivity() {
             val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
             val colorTheme by settingsViewModel.colorTheme.collectAsStateWithLifecycle()
             val dynamicColor by settingsViewModel.dynamicColor.collectAsStateWithLifecycle()
+            val customColorArgb by settingsViewModel.customColorArgb.collectAsStateWithLifecycle()
 
             MusicToolsTheme(
                 themeMode = themeMode,
                 colorTheme = colorTheme,
-                dynamicColor = dynamicColor
+                dynamicColor = dynamicColor,
+                customColorArgb = customColorArgb
             ) {
                 MusicPlayerApp(
                     musicPlayerViewModel = musicPlayerViewModel,

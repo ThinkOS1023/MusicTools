@@ -28,10 +28,15 @@ class AppPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_DYNAMIC_COLOR, false)
         set(value) = prefs.edit().putBoolean(KEY_DYNAMIC_COLOR, value).apply()
 
+    var customColorArgb: Long
+        get() = prefs.getLong(KEY_CUSTOM_COLOR, 0xFF6750A4L)
+        set(value) = prefs.edit().putLong(KEY_CUSTOM_COLOR, value).apply()
+
     companion object {
         private const val KEY_OPENAI_API_KEY = "openai_api_key"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_COLOR_THEME = "color_theme"
         private const val KEY_DYNAMIC_COLOR = "dynamic_color"
+        private const val KEY_CUSTOM_COLOR = "custom_color"
     }
 }

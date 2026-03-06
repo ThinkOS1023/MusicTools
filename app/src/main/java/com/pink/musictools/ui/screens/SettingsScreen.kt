@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pink.musictools.data.model.ColorTheme
@@ -52,6 +55,7 @@ fun SettingsScreen(
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val colorTheme by viewModel.colorTheme.collectAsStateWithLifecycle()
     val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
+    val customColorArgb by viewModel.customColorArgb.collectAsStateWithLifecycle()
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     LazyColumn(
@@ -137,7 +141,9 @@ fun SettingsScreen(
                         )
                         ColorThemePicker(
                             selected = colorTheme,
+                            customColorArgb = customColorArgb,
                             onSelect = { viewModel.setColorTheme(it) },
+                            onCustomColorChange = { viewModel.setCustomColorArgb(it) },
                             modifier = Modifier.padding(
                                 start = 56.dp,
                                 end = 16.dp,
@@ -234,10 +240,12 @@ private fun SettingsRow(
 @Composable
 private fun ColorThemePicker(
     selected: ColorTheme,
+    customColorArgb: Long,
     onSelect: (ColorTheme) -> Unit,
+    onCustomColorChange: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val items = listOf(
+    val presets = listOf(
         ColorTheme.PURPLE to Color(0xFF6750A4),
         ColorTheme.BLUE   to Color(0xFF1565C0),
         ColorTheme.GREEN  to Color(0xFF386A20),
@@ -245,35 +253,108 @@ private fun ColorThemePicker(
         ColorTheme.ORANGE to Color(0xFF9C4400),
     )
 
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items.forEach { (theme, color) ->
-            val isSelected = selected == theme
+    var hexInput by remember {
+        mutableStateOf(String.format("%06X", customColorArgb and 0xFFFFFFL))
+    }
+    var hexError by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        // ── Color circles row ─────────────────────────────────────────────────
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            presets.forEach { (theme, color) ->
+                val isSelected = selected == theme
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .then(
+                            if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                            else Modifier
+                        )
+                        .clickable { onSelect(theme) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+            }
+
+            // Custom circle
+            val customPreview = Color(customColorArgb)
+            val isCustomSelected = selected == ColorTheme.CUSTOM
             Box(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(color)
+                    .background(if (isCustomSelected) customPreview else MaterialTheme.colorScheme.surfaceVariant)
                     .then(
-                        if (isSelected) Modifier.border(
-                            3.dp,
-                            MaterialTheme.colorScheme.onSurface,
-                            CircleShape
-                        ) else Modifier
+                        if (isCustomSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                        else Modifier
                     )
-                    .clickable { onSelect(theme) },
+                    .clickable { onSelect(ColorTheme.CUSTOM) },
                 contentAlignment = Alignment.Center
             ) {
-                if (isSelected) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
+                if (isCustomSelected) {
+                    val onCustom = if ((0.299f * customPreview.red + 0.587f * customPreview.green + 0.114f * customPreview.blue) > 0.5f)
+                        Color.Black else Color.White
+                    Icon(Icons.Default.Check, null, tint = onCustom, modifier = Modifier.size(18.dp))
+                } else {
+                    Icon(Icons.Default.Palette, null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp))
                 }
+            }
+        }
+
+        // ── Hex input — shown only when CUSTOM is selected ────────────────────
+        AnimatedVisibility(
+            visible = selected == ColorTheme.CUSTOM,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Row(
+                modifier = Modifier.padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = hexInput,
+                    onValueChange = { raw ->
+                        val filtered = raw.uppercase().filter { it in '0'..'9' || it in 'A'..'F' }.take(6)
+                        hexInput = filtered
+                        if (filtered.length == 6) {
+                            try {
+                                val argb = 0xFF000000L or filtered.toLong(16)
+                                hexError = false
+                                onCustomColorChange(argb)
+                            } catch (_: NumberFormatException) { hexError = true }
+                        } else {
+                            hexError = filtered.isNotEmpty()
+                        }
+                    },
+                    label = { Text("自定义颜色") },
+                    prefix = { Text("#") },
+                    placeholder = { Text("RRGGBB") },
+                    isError = hexError,
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Ascii,
+                        imeAction = ImeAction.Done
+                    )
+                )
+                // Live preview circle
+                val previewColor = if (!hexError && hexInput.length == 6) {
+                    try { Color(0xFF000000L or hexInput.toLong(16)) }
+                    catch (_: Exception) { Color(customColorArgb) }
+                } else Color(customColorArgb)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(previewColor)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                )
             }
         }
     }

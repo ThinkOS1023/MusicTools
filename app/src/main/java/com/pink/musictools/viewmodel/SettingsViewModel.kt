@@ -35,6 +35,9 @@ class SettingsViewModel(private val prefs: AppPreferences) : ViewModel() {
     private val _dynamicColor = MutableStateFlow(prefs.dynamicColor)
     val dynamicColor: StateFlow<Boolean> = _dynamicColor.asStateFlow()
 
+    private val _customColorArgb = MutableStateFlow(prefs.customColorArgb)
+    val customColorArgb: StateFlow<Long> = _customColorArgb.asStateFlow()
+
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
 
@@ -53,6 +56,11 @@ class SettingsViewModel(private val prefs: AppPreferences) : ViewModel() {
     fun setDynamicColor(enabled: Boolean) {
         _dynamicColor.value = enabled
         prefs.dynamicColor = enabled
+    }
+
+    fun setCustomColorArgb(argb: Long) {
+        _customColorArgb.value = argb
+        prefs.customColorArgb = argb
     }
 
     fun checkForUpdate() {

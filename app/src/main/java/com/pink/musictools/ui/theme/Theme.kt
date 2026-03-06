@@ -2,12 +2,14 @@ package com.pink.musictools.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.pink.musictools.data.model.ColorTheme
 import com.pink.musictools.data.model.ThemeMode
@@ -245,11 +247,57 @@ private val OrangeDarkScheme = darkColorScheme(
     outline = md_theme_orange_dark_outline
 )
 
+// ── Custom color scheme builder ────────────────────────────────────────────────
+private fun Color.isLight(): Boolean =
+    0.299f * red + 0.587f * green + 0.114f * blue > 0.5f
+
+private fun buildCustomScheme(primary: Color, darkTheme: Boolean): ColorScheme {
+    val onPrimary = if (primary.isLight()) Color(0xFF000000) else Color(0xFFFFFFFF)
+    return if (darkTheme) {
+        val lighterPrimary = Color(
+            red   = (primary.red   + (1f - primary.red)   * 0.4f).coerceIn(0f, 1f),
+            green = (primary.green + (1f - primary.green) * 0.4f).coerceIn(0f, 1f),
+            blue  = (primary.blue  + (1f - primary.blue)  * 0.4f).coerceIn(0f, 1f)
+        )
+        val darkOnPrimary = if (lighterPrimary.isLight()) Color(0xFF000000) else Color(0xFFFFFFFF)
+        val container = Color(
+            red   = (primary.red   * 0.3f).coerceIn(0f, 1f),
+            green = (primary.green * 0.3f).coerceIn(0f, 1f),
+            blue  = (primary.blue  * 0.3f).coerceIn(0f, 1f)
+        )
+        val onContainer = Color(
+            red   = (primary.red   * 0.7f + 0.3f).coerceIn(0f, 1f),
+            green = (primary.green * 0.7f + 0.3f).coerceIn(0f, 1f),
+            blue  = (primary.blue  * 0.7f + 0.3f).coerceIn(0f, 1f)
+        )
+        PurpleDarkScheme.copy(
+            primary = lighterPrimary, onPrimary = darkOnPrimary,
+            primaryContainer = container, onPrimaryContainer = onContainer
+        )
+    } else {
+        val container = Color(
+            red   = (primary.red   * 0.2f + 0.8f).coerceIn(0f, 1f),
+            green = (primary.green * 0.2f + 0.8f).coerceIn(0f, 1f),
+            blue  = (primary.blue  * 0.2f + 0.8f).coerceIn(0f, 1f)
+        )
+        val onContainer = Color(
+            red   = (primary.red   * 0.3f).coerceIn(0f, 1f),
+            green = (primary.green * 0.3f).coerceIn(0f, 1f),
+            blue  = (primary.blue  * 0.3f).coerceIn(0f, 1f)
+        )
+        PurpleLightScheme.copy(
+            primary = primary, onPrimary = onPrimary,
+            primaryContainer = container, onPrimaryContainer = onContainer
+        )
+    }
+}
+
 @Composable
 fun MusicToolsTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     colorTheme: ColorTheme = ColorTheme.PURPLE,
     dynamicColor: Boolean = false,
+    customColorArgb: Long = 0xFF6750A4L,
     content: @Composable () -> Unit
 ) {
     val systemDark = isSystemInDarkTheme()
@@ -270,6 +318,7 @@ fun MusicToolsTheme(
             ColorTheme.GREEN  -> if (darkTheme) GreenDarkScheme   else GreenLightScheme
             ColorTheme.RED    -> if (darkTheme) RedDarkScheme     else RedLightScheme
             ColorTheme.ORANGE -> if (darkTheme) OrangeDarkScheme  else OrangeLightScheme
+            ColorTheme.CUSTOM -> buildCustomScheme(Color(customColorArgb), darkTheme)
         }
     }
 
